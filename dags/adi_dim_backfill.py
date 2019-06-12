@@ -5,12 +5,11 @@ from operators.gcp_container_operator import GKEPodOperator
 
 from airflow.contrib.hooks.gcp_api_base_hook import GoogleCloudBaseHook
 
-
 DEFAULT_ARGS = {
     'owner': 'hwoo@mozilla.com',
     'depends_on_past': False,
     'start_date': datetime(2019, 4, 18),
-    'end_date': datetime(2019, 4, 18)
+    'end_date': datetime(2019, 4, 18),
     'email': ['hwoo@mozilla.com', 'dataops+alerts@mozilla.com'],
     'email_on_failure': True,
     'email_on_retry': True,
@@ -35,7 +34,7 @@ load_args = [
     '--source_format=CSV',
     '--skip_leading_rows=1',
     '--replace',
-    '--field_delimiter=,',
+    "--field_delimiter=','",
     'blpadi.adi_dim_backfill${{ ds_nodash }}',
     'gs://dp2-stage-vertica/copy_adi_dimensional_by_date/{{ ds }}.csv',
 ]
@@ -52,6 +51,7 @@ insert_args = [
 load_backfill_to_bq_temp_table = GKEPodOperator(
     task_id='bigquery_load_temp_table',
     gcp_conn_id=gcp_conn_id,
+#    project_id='moz-fx-data-derived-datasets',
     project_id=connection.project_id,
     location='us-central1-a',
     cluster_name='bq-load-gke-1',
@@ -65,7 +65,7 @@ load_backfill_to_bq_temp_table = GKEPodOperator(
 select_insert_into_final_table = GKEPodOperator(
     task_id='bigquery_insert_final_table',
     gcp_conn_id=gcp_conn_id,
-    project_id=connection.project_id,
+    project_id='moz-fx-data-derived-datasets',
     location='us-central1-a',
     cluster_name='bq-load-gke-1',
     name='bq-query-insert-final-tbl',

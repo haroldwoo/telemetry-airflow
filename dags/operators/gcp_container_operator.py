@@ -29,9 +29,16 @@ class GKEPodOperator(GKEPodOperator):
         # If gcp_conn_id is not specified gcloud will use the default
         # service account credentials.
         if self.gcp_conn_id:
+            print "I am here1, gcp conn id was set to " + str(self.gcp_conn_id)
+            print "I am here2, project is " + str(self.project_id)
+            print "cluster name " + str(self.cluster_name)
+            print "location is " + str(self.location)
             from airflow.hooks.base_hook import BaseHook
             # extras is a deserialized json object
+            connection = BaseHook.get_connection(self.gcp_conn_id)
+            print "I am here4, connection is " + str(connection) + " and connection id is " + str(connection.conn_id) + " and connection type is " + str(connection.conn_type) + " and connection extra is " + str(connection._extra)
             extras = BaseHook.get_connection(self.gcp_conn_id).extra_dejson
+            print "I am here3, extras is " + str(extras)
             self._set_env_from_extras(extras=extras)
 
         # Write config to a temp file and set the environment variable to point to it.
