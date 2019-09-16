@@ -1,14 +1,15 @@
 from airflow import DAG
 from datetime import datetime, timedelta
 
-from operators.emr_spark_operator import EMRSparkOperator
+from airflow.contrib.hooks.gcp_api_base_hook import GoogleCloudBaseHook
+from operators.gcp_container_operator import GKEPodOperator
 
 from utils.mozetl import mozetl_envvar
 
 default_args = {
     'owner': 'amiyaguchi@mozilla.com',
     'depends_on_past': False,
-    'start_date': datetime(2018, 11, 26),
+    'start_date': datetime(2019, 9, 15),
     'email': ['telemetry-alerts@mozilla.com', 'amiyaguchi@mozilla.com'],
     'email_on_failure': True,
     'email_on_retry': True,
@@ -17,6 +18,28 @@ default_args = {
 }
 
 dag = DAG('taar_amodump', default_args=default_args, schedule_interval='@daily')
+
+gcp_conn_id = "google_cloud_derived_datasets_2"
+connection = GoogleCloudBaseHook(gcp_conn_id=gcp_conn_id)
+
+amodump = GKEPodOperator(
+    task_id="taar_amodump",
+    gcp_conn_id=gcp_conn_id,
+    project_id=connection.project_id,
+    location='us-central1-a',
+    cluster_name='bq-load-gke-1',
+    name='taar-amodump',
+    namespace='default',
+    image='gcr.io/moz-fx-data-airflow-prod-88e0/taar_gcp_etl:latest',
+    owner="vng@mozilla.com",
+    email=["mlopatka@mozilla.com", "vng@mozilla.com", "hwoo@mozilla.com"],
+    arguments=[
+        "taar_etl/taar_amodump.py", "--date", "{{ ds_nodash }}"
+    ],
+    dag=dag
+)
+
+"""
 
 amodump = EMRSparkOperator(
     task_id="taar_amodump",
@@ -32,6 +55,7 @@ amodump = EMRSparkOperator(
     output_visibility="private",
     dag=dag
 )
+
 
 amowhitelist = EMRSparkOperator(
     task_id="taar_amowhitelist",
@@ -87,3 +111,4 @@ editorial_whitelist.set_upstream(amodump)
 
 # Set a dependency on amowhitelist from taar_lite
 taar_lite.set_upstream(amowhitelist)
+"""
